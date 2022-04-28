@@ -1,0 +1,12 @@
+sd_card.c:16:13:select	8	static
+sd_card.c:20:13:deselect	8	static
+sd_card.c:24:26:spi_txByte	16	static
+sd_card.c:30:16:spi_rxByte	24	static
+sd_card.c:38:16:SD_sendCommand	24	static
+sd_card.c:79:9:SD_init	32	static
+sd_card.c:124:9:SD_status	24	static
+sd_card.c:137:9:SD_read	40	static
+sd_card.c:165:9:SD_write	40	static
+sd_card.c:195:9:SD_ioctl	16	static
+sd_card.c:199:9:SD_erase	32	static
+sd_card.c:212:9:SD_getCSD	24	static
