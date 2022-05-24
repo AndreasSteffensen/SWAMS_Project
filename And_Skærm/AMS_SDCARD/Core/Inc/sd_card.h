@@ -34,21 +34,11 @@
 #define BLOCK_SIZE 512
 #define TOKEN 0b11111110
 
-typedef struct CSDRegister{
-	uint8_t reg[16];
-} CSDRegister;
-
-volatile CSDRegister csd;
-
-volatile uint8_t SDHC_flag, cardType;
-
 DSTATUS SD_init(BYTE pdrv);
 DSTATUS SD_status(BYTE pdrv);
 DSTATUS SD_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count);
 DSTATUS SD_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count);
 DSTATUS SD_ioctl(BYTE pdrv, BYTE cmd, void* buff);
-DSTATUS SD_erase(BYTE pdrv, DWORD start, UINT count);
-DSTATUS SD_getCSD(BYTE pdrv);
 #define SPI_TIMEOUT 1000
 
 #endif /* INC_SD_CARD_H_ */

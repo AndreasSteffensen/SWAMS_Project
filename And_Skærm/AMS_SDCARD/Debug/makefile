@@ -9,12 +9,8 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include USB_DEVICE/Target/subdir.mk
--include USB_DEVICE/App/subdir.mk
 -include Middlewares/Third_Party/FatFs/src/option/subdir.mk
 -include Middlewares/Third_Party/FatFs/src/subdir.mk
--include Middlewares/ST/STM32_USB_Device_Library/Core/Src/subdir.mk
--include Middlewares/ST/STM32_USB_Device_Library/Class/MSC/Src/subdir.mk
 -include FATFS/Target/subdir.mk
 -include FATFS/App/subdir.mk
 -include Drivers/STM32L4xx_HAL_Driver/Src/subdir.mk
@@ -68,8 +64,8 @@ all: main-build
 main-build: AMS_SDCARD.elf secondary-outputs
 
 # Tool invocations
-AMS_SDCARD.elf: $(OBJS) $(USER_OBJS) C:\Users\nickl\STM32CubeIDE\workspace_1.8.0\AMS_SDCARD\STM32L4R5ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "AMS_SDCARD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\nickl\STM32CubeIDE\workspace_1.8.0\AMS_SDCARD\STM32L4R5ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="AMS_SDCARD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+AMS_SDCARD.elf: $(OBJS) $(USER_OBJS) C:\Users\nickl\Dropbox\Uni\7Bachelor\AMS\Projekt\AMS_SDCARD\STM32L4R5ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "AMS_SDCARD.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\nickl\Dropbox\Uni\7Bachelor\AMS\Projekt\AMS_SDCARD\STM32L4R5ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="AMS_SDCARD.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -1,0 +1,3 @@
+bitmap_driver.c:13:14:getBitmapHeader	160	static
+bitmap_driver.c:29:10:getImageData	32	static
+bitmap_driver.c:41:6:fillImageBuffer	96	static

@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
-#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -27,6 +26,7 @@
 #include "stm32l4xx_hal_uart_ex.h"
 #include "string.h"
 #include "sd_card.h"
+#include "bitmap_driver.h"
 //#include "diskio.h"
 /* USER CODE END Includes */
 
@@ -65,6 +65,17 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+char uartbuffer[128];
+
+void clearUartBuffer(){
+	memset(uartbuffer,0,128);
+}
+
+void send_uart(char* string){
+	uint8_t len = strlen(string);
+	HAL_UART_Transmit(&hlpuart1, string, len, 1000);
+	clearUartBuffer();
+}
 
 /* USER CODE END 0 */
 
@@ -75,9 +86,19 @@ static void MX_SPI1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-uint8_t block[BLOCK_SIZE];
-uint8_t response = 0;
 
+	//FATFS variables
+	FIL file;
+	FATFS fs;
+	FRESULT res;
+	uint32_t total, free_space;
+	DWORD fre_clu;
+	BitmapHeader bmh;
+
+	uint8_t pixelBuffer[37632];
+
+	memset(pixelBuffer,0,37632);
+	memset(&bmh,0,sizeof(BitmapHeader));
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -102,46 +123,49 @@ uint8_t response = 0;
   MX_USART3_UART_Init();
   MX_SPI1_Init();
   MX_FATFS_Init();
-  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
 
 
-  response = SD_init(1);
-  response = SD_read(1, block, 500, 1);
-  for (int i = 0; i < BLOCK_SIZE; i++){
-  		  block[i] = i;
+  res = f_mount(&fs,"0", 0);
+  if (res != FR_OK){
+	  send_uart("Error mounting filesystem\n");
+  } else {
+	  send_uart("filesystem mounted\n");
   }
-  response = SD_write(1, block, 2000, 1);
-  memset(block,0,BLOCK_SIZE);
-  response = SD_read(1, block, 2000, 1);
+  res = f_getfree("0", &fre_clu, &fs);
+  sprintf(uartbuffer, "f_getfree result: %d\n",res);
+  send_uart(uartbuffer);
+  total = (fs.n_fatent - 2) * fs.csize;
+  free_space = fre_clu * fs.csize;
+  sprintf(uartbuffer, "%10lu KiB total drive space.\n%10lu KiB available.\n", total / 2, free_space / 2);
+  send_uart(uartbuffer);
 
+  res = f_mount(&fs,"0", 0);
+  bmh = bm_getBitmapHeader(&file, "MonkaS.bmp");
+
+  //res = getImageData(&file, "MonkaS.bmp", 0, 128, (uint8_t*)pixelBuffer);
+  bm_fillImageBuffer(&file, "MonkaS.bmp",pixelBuffer);
+
+
+  DIR dj;
+  FILINFO fno;
+  res = f_findfirst(&dj, &fno, "", "*.bmp");
+  sprintf(uartbuffer, "f_findfirst result: %d\n",res);
+  send_uart(uartbuffer);
+  sprintf(uartbuffer,"%s\n", fno.fname);
+  send_uart(uartbuffer);
+
+  f_mount(NULL, "0", 0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /*for (int i = 0; i < BLOCK_SIZE; i++){
-		  char string[64];
-		  itoa(block[i],string,10);
-		  HAL_UART_Transmit(&hlpuart1, string, 64, 100);
-	  }*/
-	  memset(block,1,BLOCK_SIZE);
-	  response = SD_read(1, block, 2000, 1);
-	  memset(block,0,BLOCK_SIZE);
-	  response = SD_getCSD(1);
-	  memcpy(block,&csd,16);
-	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  //HAL_StatusTypeDef resp;
-	  //resp = HAL_UART_Transmit(&hlpuart1, (uint8_t*)data, strlen(data),100);
-	  //if(resp != HAL_OK)
-		  //Error_Handler();
-
-	  //HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -164,9 +188,8 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
@@ -379,6 +402,20 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USB_OverCurrent_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : USB_SOF_Pin USB_ID_Pin USB_DM_Pin USB_DP_Pin */
+  GPIO_InitStruct.Pin = USB_SOF_Pin|USB_ID_Pin|USB_DM_Pin|USB_DP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USB_VBUS_Pin */
+  GPIO_InitStruct.Pin = USB_VBUS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(USB_VBUS_GPIO_Port, &GPIO_InitStruct);
 
 }
 
